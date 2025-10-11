@@ -11,3 +11,4 @@ tqdm
 python-multipart
 pydantic
 nltk
+plotly
