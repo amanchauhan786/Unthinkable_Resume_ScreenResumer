@@ -252,8 +252,7 @@ class ProfessionalResumeScreener:
                 ["🏠 Dashboard", "📊 Analyze Resume", "👥 Candidate Database", "📈 Analytics & History"],
                 label_visibility="collapsed"
             )
-            
-            st.markdown("---")
+
             
         return app_mode
     
