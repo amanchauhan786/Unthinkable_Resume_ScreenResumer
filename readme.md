@@ -21,7 +21,7 @@
 
 ## 🚀 Live Demo
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://your-app-url.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://unthinkableresume.streamlit.app/)
 
 ## 🛠️ Installation & Setup
 
@@ -291,3 +291,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Note**: Replace `yourusername` with your actual GitHub username in all links before publishing.
+
