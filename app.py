@@ -81,6 +81,13 @@ class ResumeScreenerApp:
             "Choose Mode",
             ["🏠 Home", "📊 Analyze Resume", "👥 View Candidates", "📈 Results History"]
         )
+        
+        st.sidebar.markdown("---")
+        st.sidebar.info("""
+        **About:**
+        AI-powered resume screening without external NLP dependencies.
+        """)
+        
         return app_mode
     
     def render_home(self):
@@ -90,15 +97,13 @@ class ResumeScreenerApp:
         col1, col2, col3 = st.columns([1, 2, 1])
         
         with col2:
-            st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=150)
-            
             st.markdown("""
             ### Welcome to Smart Resume Screener!
             
             This AI-powered tool helps recruiters and hiring managers:
             
             - **📄 Parse resumes** in multiple formats (PDF, DOCX, TXT)
-            - **🔍 Extract skills and experience** automatically
+            - **🔍 Extract skills and experience** using advanced pattern matching
             - **🎯 Match candidates** with job descriptions using AI
             - **📊 Generate comprehensive scores** with detailed justifications
             - **💾 Store and manage** candidate data
@@ -110,9 +115,9 @@ class ResumeScreenerApp:
             4. Get instant AI-powered analysis
             
             ### Supported Features:
-            - Multi-format file support
-            - Local NLP + Gemini AI matching
-            - Skills extraction
+            - Multi-format file support (PDF, DOCX, TXT)
+            - Advanced skill extraction without external NLP
+            - Gemini AI matching with detailed justifications
             - Candidate database
             - Results history
             """)
@@ -200,10 +205,10 @@ class ResumeScreenerApp:
                     candidate_data = {
                         'candidate_name': resume_filename,
                         'resume_path': resume_path,
-                        'resume_text': resume_text[:1000],  # Store first 1000 chars
+                        'resume_text': resume_text[:1000],
                         'skills': skills,
                         'experience': self.file_processor.extract_experience(resume_text),
-                        'education': ""  # Can be enhanced
+                        'education': self.file_processor.extract_education(resume_text)
                     }
                     self.db.save_candidate(candidate_data)
                     
@@ -234,7 +239,7 @@ class ResumeScreenerApp:
                     st.error(f"Error during analysis: {str(e)}")
     
     def display_results(self, results: dict, skills: list):
-        """Display analysis results"""
+        """Display analysis results - UPDATED to remove spaCy references"""
         st.header("🎯 Analysis Results")
         
         # Score cards
@@ -244,9 +249,9 @@ class ResumeScreenerApp:
             local_score = results['local_scores']['final_local_score']
             color_icon = display_score_with_color(local_score)
             st.metric(
-                label="🧩 Local NLP Score",
+                label="🧩 Local Match Score",
                 value=f"{local_score}/10",
-                delta=f"{color_icon} Basic Match"
+                delta=f"{color_icon} Text Similarity"
             )
         
         with col2:
@@ -275,21 +280,39 @@ class ResumeScreenerApp:
                 delta="AI Suggestion"
             )
         
-        # Detailed scores
+        # Detailed scores - UPDATED to remove spaCy references
         with st.expander("📊 Detailed Scores", expanded=True):
             col1, col2 = st.columns(2)
             
             with col1:
-                st.subheader("Local NLP Scores")
+                st.subheader("Local Matching Scores")
                 local_scores = results['local_scores']
-                st.write(f"**SpaCy Similarity:** {local_scores['spacy_similarity']:.3f}")
-                st.write(f"**Transformer Similarity:** {local_scores['transformer_similarity']:.3f}")
-                st.write(f"**Fuzzy Match:** {local_scores['fuzzy_match']}%")
+                
+                # Check which scoring method was used and display appropriate metrics
+                if 'transformer_similarity' in local_scores:
+                    # Using sentence-transformers version
+                    st.write(f"**Transformer Similarity:** {local_scores['transformer_similarity']:.3f}")
+                    st.write(f"**Fuzzy Match:** {local_scores['fuzzy_match']}%")
+                    st.write(f"**Keyword Overlap:** {local_scores['keyword_overlap']}%")
+                elif 'fuzzy_ratio' in local_scores:
+                    # Using simplified version
+                    st.write(f"**Fuzzy Ratio:** {local_scores['fuzzy_ratio']}%")
+                    st.write(f"**Fuzzy Token:** {local_scores['fuzzy_token']}%")
+                    st.write(f"**Keyword Overlap:** {local_scores['keyword_overlap']}%")
+                else:
+                    # Fallback for any other format
+                    for key, value in local_scores.items():
+                        if key != 'final_local_score':
+                            st.write(f"**{key.replace('_', ' ').title()}:** {value}")
             
             with col2:
                 st.subheader("Extracted Skills")
                 if skills:
-                    st.write(", ".join(skills))
+                    # Display skills in a nicer format
+                    cols = st.columns(3)
+                    for i, skill in enumerate(skills):
+                        cols[i % 3].write(f"• {skill}")
+                    st.write(f"**Total Skills Found:** {len(skills)}")
                 else:
                     st.write("No skills detected")
         
@@ -299,14 +322,20 @@ class ResumeScreenerApp:
         with col1:
             st.subheader("✅ Strengths")
             strengths = results['gemini_scores'].get('strengths', [])
-            for strength in strengths:
-                st.markdown(f'<div class="strength-item">✓ {strength}</div>', unsafe_allow_html=True)
+            if strengths:
+                for strength in strengths:
+                    st.markdown(f'<div class="strength-item">✓ {strength}</div>', unsafe_allow_html=True)
+            else:
+                st.write("No specific strengths identified")
         
         with col2:
             st.subheader("⚠️ Gaps & Concerns")
             gaps = results['gemini_scores'].get('gaps', [])
-            for gap in gaps:
-                st.markdown(f'<div class="gap-item">✗ {gap}</div>', unsafe_allow_html=True)
+            if gaps:
+                for gap in gaps:
+                    st.markdown(f'<div class="gap-item">✗ {gap}</div>', unsafe_allow_html=True)
+            else:
+                st.write("No major gaps identified")
         
         # Justification
         st.subheader("📋 Detailed Analysis")
@@ -328,7 +357,7 @@ class ResumeScreenerApp:
         for candidate in candidates:
             candidate_data.append({
                 'Name': candidate['candidate_name'],
-                'Skills': ', '.join(candidate.get('skills', [])[:3]) if candidate.get('skills') else 'Not extracted',
+                'Skills': ', '.join(candidate.get('skills', [])[:5]) if candidate.get('skills') else 'Not extracted',
                 'Experience': candidate.get('experience', '')[:100] + '...' if candidate.get('experience') else 'Not extracted',
                 'Added': candidate['created_at'][:10] if candidate['created_at'] else 'Unknown'
             })
@@ -349,14 +378,19 @@ class ResumeScreenerApp:
                 with col1:
                     st.write("**Skills:**")
                     if candidate.get('skills'):
-                        for skill in candidate['skills']:
+                        for skill in candidate['skills'][:10]:
                             st.write(f"- {skill}")
+                        if len(candidate['skills']) > 10:
+                            st.write(f"... and {len(candidate['skills']) - 10} more skills")
                     else:
                         st.write("No skills extracted")
                 
                 with col2:
                     st.write("**Experience Summary:**")
                     st.write(candidate.get('experience', 'Not available'))
+                    
+                    st.write("**Education:**")
+                    st.write(candidate.get('education', 'Not available'))
     
     def render_results_history(self):
         """Render results history page"""
@@ -380,7 +414,7 @@ class ResumeScreenerApp:
         # Results table
         st.subheader("Recent Analyses")
         results_data = []
-        for result in results[:10]:  # Show last 10
+        for result in results[:10]:
             results_data.append({
                 'Resume': result['resume_name'],
                 'Job Description': result['jd_name'],
@@ -407,7 +441,7 @@ class ResumeScreenerApp:
             with col1:
                 st.write("**Scores:**")
                 st.write(f"Final Score: **{result['final_score']}/10**")
-                st.write(f"Local NLP Score: {result['local_score']}/10")
+                st.write(f"Local Match Score: {result['local_score']}/10")
                 st.write(f"Gemini AI Score: {result['gemini_score']}/10")
             
             with col2:
