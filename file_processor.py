@@ -2,16 +2,30 @@ import pdfplumber
 import docx
 import os
 import logging
+import re
 from typing import Optional
-import spacy
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+
+# Download NLTK data if not available
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
 
 logger = logging.getLogger(__name__)
 
 class FileProcessor:
-    """Handle file processing for resumes and job descriptions"""
+    """Handle file processing for resumes and job descriptions without spaCy"""
     
     def __init__(self):
-        self.nlp = spacy.load("en_core_web_sm")
+        self.stop_words = set(stopwords.words('english'))
     
     def extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text from PDF file"""
@@ -63,50 +77,109 @@ class FileProcessor:
             raise ValueError(f"Unsupported file type: {file_ext}")
     
     def extract_skills(self, text: str) -> list:
-        """Extract skills from text using spaCy"""
+        """Extract skills from text using keyword matching"""
         try:
-            doc = self.nlp(text)
-            skills = []
-            
-            # Simple rule-based skill extraction
+            # Comprehensive skill keywords
             skill_keywords = {
-                'python', 'java', 'javascript', 'typescript', 'react', 'angular', 'vue',
-                'node.js', 'django', 'flask', 'fastapi', 'spring', 'express',
-                'sql', 'mysql', 'postgresql', 'mongodb', 'redis',
-                'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform',
-                'machine learning', 'deep learning', 'nlp', 'computer vision',
-                'tensorflow', 'pytorch', 'scikit-learn', 'pandas', 'numpy',
-                'git', 'jenkins', 'ci/cd', 'agile', 'scrum'
+                # Programming Languages
+                'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'go', 'rust', 
+                'swift', 'kotlin', 'php', 'ruby', 'scala', 'r', 'matlab', 'perl',
+                
+                # Web Technologies
+                'react', 'angular', 'vue', 'django', 'flask', 'fastapi', 'spring', 
+                'express', 'node.js', 'nodejs', 'html', 'css', 'bootstrap', 'tailwind',
+                'sass', 'less', 'jquery', 'webpack', 'babel',
+                
+                # Databases
+                'sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'oracle', 'sqlite',
+                'cassandra', 'dynamodb', 'firebase',
+                
+                # Cloud & DevOps
+                'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform', 'jenkins',
+                'ansible', 'puppet', 'chef', 'git', 'github', 'gitlab', 'ci/cd',
+                
+                # Data Science & AI
+                'machine learning', 'deep learning', 'nlp', 'computer vision', 'ai',
+                'tensorflow', 'pytorch', 'scikit-learn', 'pandas', 'numpy', 'matplotlib',
+                'seaborn', 'plotly', 'keras', 'opencv', 'nltk', 'spacy',
+                
+                # Mobile Development
+                'react native', 'flutter', 'android', 'ios', 'xcode',
+                
+                # Tools & Methodologies
+                'agile', 'scrum', 'kanban', 'jira', 'confluence', 'trello', 'slack',
+                'microsoft office', 'excel', 'word', 'powerpoint', 'outlook',
+                
+                # Soft Skills
+                'leadership', 'communication', 'teamwork', 'problem solving', 'analytical',
+                'project management', 'time management', 'creativity', 'adaptability'
             }
             
-            # Extract skills using noun phrases and entities
-            for token in doc:
-                if token.text.lower() in skill_keywords and token.text.lower() not in skills:
-                    skills.append(token.text.lower())
+            text_lower = text.lower()
+            found_skills = []
             
-            # Also check noun phrases
-            for chunk in doc.noun_chunks:
-                if chunk.text.lower() in skill_keywords and chunk.text.lower() not in skills:
-                    skills.append(chunk.text.lower())
+            # Direct keyword matching
+            for skill in skill_keywords:
+                # Use word boundaries for better matching
+                if re.search(r'\b' + re.escape(skill) + r'\b', text_lower):
+                    found_skills.append(skill)
             
-            return sorted(list(set(skills)))
+            return sorted(list(set(found_skills)))
         except Exception as e:
             logger.error(f"Error extracting skills: {e}")
             return []
     
     def extract_experience(self, text: str) -> str:
-        """Extract experience information"""
+        """Extract experience information using pattern matching"""
         try:
-            # Simple experience extraction - can be enhanced
-            doc = self.nlp(text)
-            experience_keywords = ['experience', 'work', 'employment', 'career']
+            # Look for experience-related sections
+            experience_patterns = [
+                r'experience.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)',
+                r'work.*?history.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)',
+                r'employment.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)',
+                r'professional.*?experience.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)'
+            ]
             
-            sentences = []
-            for sent in doc.sents:
-                if any(keyword in sent.text.lower() for keyword in experience_keywords):
-                    sentences.append(sent.text.strip())
+            for pattern in experience_patterns:
+                match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                if match:
+                    experience_text = match.group(1).strip()
+                    # Take first 200 characters
+                    return experience_text[:200] + "..." if len(experience_text) > 200 else experience_text
             
-            return " ".join(sentences[:3])  # Return first 3 relevant sentences
+            # If no specific section found, look for sentences with experience keywords
+            sentences = sent_tokenize(text)
+            experience_sentences = []
+            experience_keywords = ['experience', 'worked', 'employed', 'position', 'role', 'job']
+            
+            for sentence in sentences:
+                if any(keyword in sentence.lower() for keyword in experience_keywords):
+                    experience_sentences.append(sentence.strip())
+                    if len(experience_sentences) >= 3:  # Limit to 3 sentences
+                        break
+            
+            return " ".join(experience_sentences) if experience_sentences else "Experience information not found"
+            
         except Exception as e:
             logger.error(f"Error extracting experience: {e}")
-            return ""
+            return "Experience extraction failed"
+    
+    def extract_education(self, text: str) -> str:
+        """Extract education information"""
+        try:
+            education_patterns = [
+                r'education.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)',
+                r'qualifications.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)',
+                r'degree.*?\n(.*?)(?:\n\n|\n[A-Z]|\n\s*$|$)'
+            ]
+            
+            for pattern in education_patterns:
+                match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                if match:
+                    education_text = match.group(1).strip()
+                    return education_text[:150] + "..." if len(education_text) > 150 else education_text
+            
+            return "Education information not found"
+        except Exception as e:
+            logger.error(f"Error extracting education: {e}")
+            return "Education extraction failed"
