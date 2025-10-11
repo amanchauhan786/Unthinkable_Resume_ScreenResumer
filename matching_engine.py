@@ -1,6 +1,5 @@
 import google.generativeai as genai
 from sentence_transformers import SentenceTransformer, util
-import spacy
 from fuzzywuzzy import fuzz
 import json
 import logging
@@ -9,48 +8,56 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 class MatchingEngine:
-    """Handle resume-job description matching using multiple techniques"""
+    """Handle resume-job description matching without any spaCy dependency"""
     
-    def __init__(self, gemini_api_key: str, spacy_model: str = 'en_core_web_sm'):
+    def __init__(self, gemini_api_key: str):
         self.gemini_api_key = gemini_api_key
         genai.configure(api_key=gemini_api_key)
         
-        # Initialize models
+        # Initialize sentence transformer model only
         self.embed_model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.nlp = spacy.load(spacy_model)
         self.gemini_model = genai.GenerativeModel("gemini-2.0-flash")
     
     def compute_local_similarity(self, resume_text: str, jd_text: str) -> Dict[str, float]:
-        """Compute similarity scores using local NLP models"""
+        """Compute similarity scores using only sentence transformers and fuzzy matching"""
         try:
-            # SpaCy similarity
-            doc_resume = self.nlp(resume_text[:1000000])  # Limit text length
-            doc_jd = self.nlp(jd_text[:1000000])
-            spacy_similarity = doc_resume.similarity(doc_jd)
+            # Limit text length to prevent memory issues
+            resume_text_limited = resume_text[:50000]  # 50k characters max
+            jd_text_limited = jd_text[:50000]
             
             # Sentence transformer similarity
-            resume_embedding = self.embed_model.encode(resume_text, convert_to_tensor=True)
-            jd_embedding = self.embed_model.encode(jd_text, convert_to_tensor=True)
+            resume_embedding = self.embed_model.encode(resume_text_limited, convert_to_tensor=True)
+            jd_embedding = self.embed_model.encode(jd_text_limited, convert_to_tensor=True)
             transformer_similarity = util.pytorch_cos_sim(resume_embedding, jd_embedding).item()
             
             # Fuzzy matching
-            fuzzy_score = fuzz.token_sort_ratio(resume_text.lower(), jd_text.lower()) / 100
+            fuzzy_score = fuzz.token_sort_ratio(resume_text_limited.lower(), jd_text_limited.lower()) / 100
             
-            # Combine scores
-            final_score = (spacy_similarity + transformer_similarity + fuzzy_score) / 3
+            # Keyword overlap score
+            resume_words = set(resume_text_limited.lower().split())
+            jd_words = set(jd_text_limited.lower().split())
+            common_words = resume_words.intersection(jd_words)
+            keyword_overlap = len(common_words) / max(len(jd_words), 1)
+            
+            # Combine scores (weighted average)
+            final_score = (
+                transformer_similarity * 0.5 + 
+                fuzzy_score * 0.3 + 
+                keyword_overlap * 0.2
+            )
             
             return {
-                "spacy_similarity": round(spacy_similarity, 3),
                 "transformer_similarity": round(transformer_similarity, 3),
                 "fuzzy_match": round(fuzzy_score * 100, 2),
+                "keyword_overlap": round(keyword_overlap * 100, 2),
                 "final_local_score": round(final_score * 10, 2)
             }
         except Exception as e:
             logger.error(f"Error computing local similarity: {e}")
             return {
-                "spacy_similarity": 0.0,
                 "transformer_similarity": 0.0,
                 "fuzzy_match": 0.0,
+                "keyword_overlap": 0.0,
                 "final_local_score": 0.0
             }
     
@@ -95,9 +102,19 @@ class MatchingEngine:
             # Extract JSON from response
             start = response_text.find("{")
             end = response_text.rfind("}") + 1
-            json_str = response_text[start:end]
+            if start >= 0 and end > start:
+                json_str = response_text[start:end]
+                result = json.loads(json_str)
+            else:
+                # Fallback if JSON parsing fails
+                result = {
+                    "fit_score": 5,
+                    "strengths": ["AI analysis completed but formatting issue"],
+                    "gaps": ["Could not parse detailed analysis"],
+                    "justification": response_text[:500] if response_text else "Analysis completed",
+                    "recommendation": "Consider"
+                }
             
-            result = json.loads(json_str)
             return result
             
         except Exception as e:
