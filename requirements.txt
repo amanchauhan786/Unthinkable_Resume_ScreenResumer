@@ -1,0 +1,12 @@
+streamlit
+pdfplumber
+python-docx
+spacy
+sentence-transformers
+google-generativeai
+fuzzywuzzy
+python-Levenshtein
+sqlite-utils
+tqdm
+python-multipart
+pydantic
