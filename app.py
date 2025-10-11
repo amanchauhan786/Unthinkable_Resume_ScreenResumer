@@ -255,8 +255,6 @@ class ProfessionalResumeScreener:
             
             st.markdown("---")
             
-            st.caption("v2.1 | Professional Edition")
-            
         return app_mode
     
     def render_dashboard(self):
