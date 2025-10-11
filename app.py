@@ -255,35 +255,6 @@ class ProfessionalResumeScreener:
             
             st.markdown("---")
             
-            # Quick Stats
-            try:
-                results = self.db.get_all_results()
-                if results:
-                    total_analyses = len(results)
-                    avg_score = sum(r['final_score'] for r in results) / total_analyses
-                    
-                    st.subheader("📈 Quick Stats")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.metric("Total Analyses", total_analyses)
-                    with col2:
-                        st.metric("Avg Score", f"{avg_score:.1f}")
-            except:
-                pass
-            
-            st.markdown("---")
-            
-            # About Section
-            st.subheader("ℹ️ About")
-            st.info("""
-            **TalentScreener Pro** uses advanced AI to:
-            - 🔍 Automatically extract skills & experience
-            - 🎯 Evaluate candidate-job fit intelligently  
-            - 📊 Provide detailed match analysis
-            - 💼 Support data-driven hiring decisions
-            """)
-            
-            st.markdown("---")
             st.caption("v2.1 | Professional Edition")
             
         return app_mode
