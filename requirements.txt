@@ -10,3 +10,4 @@ sqlite-utils
 tqdm
 python-multipart
 pydantic
+nltk
