@@ -34,7 +34,7 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/talentscreener-pro.git
+[git clone https://github.com/yourusername/talentscreener-pro.git](https://github.com/amanchauhan786/Unthinkable_Resume_ScreenResumer.git)
 cd talentscreener-pro
 ```
 
@@ -290,5 +290,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Note**: Replace `yourusername` with your actual GitHub username in all links before publishing.
 
