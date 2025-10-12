@@ -3,6 +3,7 @@ from fuzzywuzzy import fuzz
 import json
 import logging
 import re
+import random
 from typing import Dict, Any
 from datetime import datetime
 
@@ -264,7 +265,6 @@ class MatchingEngine:
             result['fit_score'] = sum(sub_scores) / len(sub_scores)
         
         # Apply slight variation to avoid identical scores
-        import random
         variation = random.uniform(-0.3, 0.3)
         result['fit_score'] = max(1, min(10, round(result['fit_score'] + variation, 1)))
         
@@ -277,11 +277,13 @@ class MatchingEngine:
             'python', 'java', 'javascript', 'react', 'aws', 'sql', 'docker'
         }])
         
-        # Simple heuristic scoring
+        # Simple heuristic scoring with variation
         base_score = min(8, 3 + (skill_count * 0.5) + (jd_tech_terms * 0.3))
+        variation = random.uniform(-0.5, 0.5)
+        final_score = max(1, min(9, base_score + variation))
         
         return {
-            "fit_score": round(base_score, 1),
+            "fit_score": round(final_score, 1),
             "technical_skills_score": min(9, 4 + skill_count * 0.3),
             "experience_relevance": 5.0,
             "seniority_match": 5.0,
