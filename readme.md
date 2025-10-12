@@ -250,14 +250,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Streamlit** for the excellent web application framework
 - **PDFPlumber** and **python-docx** for document processing
 - **The open-source community** for various supporting libraries
-
-## 📞 Support & Contact
-
-- **Documentation**: [GitHub Wiki](https://github.com/yourusername/talentscreener-pro/wiki)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/talentscreener-pro/issues)
-- **Email**: support@talentscreener.com
-- **Twitter**: [@TalentScreener](https://twitter.com/TalentScreener)
-
 ---
 
 <div align="center">
@@ -289,5 +281,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Basic scoring system
 
 ---
+
 
 
