@@ -13,6 +13,11 @@
 [![Open in Google Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/12XBa2QBRjQP1uYdk2yOg9sNjrELFRmED?usp=sharing)
 [![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://unthinkableresume.streamlit.app/)
 
+
+![Screen   Camera Recording - Oct 13, 2025-VEED](https://github.com/user-attachments/assets/6a696be7-8b96-4a51-856d-cc27195ac95c)
+
+
+
 ## 🏗️ System Architecture
 
 ### Architecture Diagram
@@ -412,6 +417,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 *TalentScreener Pro - Revolutionizing recruitment through AI-powered candidate assessment*
+
 
 
 
