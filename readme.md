@@ -6,6 +6,10 @@
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+
+https://github.com/user-attachments/assets/9f872d92-05e6-4e73-9945-7e603214d92e
+
+
 ## 📖 Overview
 
 **TalentScreener Pro** is an intelligent, AI-powered resume screening application that revolutionizes the recruitment process. Leveraging Google's Gemini AI and advanced text processing algorithms, it automatically analyzes resumes, extracts key skills and experience, and provides comprehensive candidate-job matching with detailed justifications.
@@ -412,4 +416,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 *TalentScreener Pro - Revolutionizing recruitment through AI-powered candidate assessment*
+
 
